@@ -464,4 +464,30 @@ final class CardManagementTest extends TestCase
         $this->assertSame(5, CardManagement::countForSubcategory($this->subcategoryId));
         $this->assertSame([], $this->storage()->listObjects(ImageStorage::bucket()), 'no stray objects from refused writes');
     }
+
+    public function testNeighborsFollowDisplayOrder(): void {
+        $ids = [];
+        foreach (['A', 'B', 'C'] as $letter) {
+            $ids[] = CardManagement::create($this->owner, $this->subcategoryId, ['front_text' => $letter, 'back_text' => 'back ' . $letter]);
+        }
+        $first = CardManagement::neighbors($ids[0]);
+        $this->assertNull($first['prev']);
+        $this->assertSame($ids[1], (int)$first['next']['id']);
+        $this->assertSame(1, $first['index']);
+        $this->assertSame(3, $first['total']);
+
+        $middle = CardManagement::neighbors($ids[1]);
+        $this->assertSame($ids[0], (int)$middle['prev']['id']);
+        $this->assertSame($ids[2], (int)$middle['next']['id']);
+        $this->assertSame(2, $middle['index']);
+
+        $last = CardManagement::neighbors($ids[2]);
+        $this->assertNull($last['next']);
+
+        // Moving C to the front changes who its neighbours are.
+        CardManagement::moveInOrder($this->owner, $ids[2], 'up');
+        CardManagement::moveInOrder($this->owner, $ids[2], 'up');
+        $this->assertSame($ids[0], (int)CardManagement::neighbors($ids[2])['next']['id']);
+        $this->assertSame(['prev' => null, 'next' => null, 'index' => 0, 'total' => 0], CardManagement::neighbors(999999));
+    }
 }

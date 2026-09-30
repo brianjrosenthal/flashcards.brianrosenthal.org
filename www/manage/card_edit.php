@@ -29,18 +29,37 @@ $msg = $_GET['msg'] ?? null;
 $imagesEnabled = ImageStorage::isConfigured();
 $currentImage = ImageStorage::displayUrlForCard($card);
 $listUrl = '/manage/cards.php?subcategory_id=' . $subcategoryId;
+$nav = CardManagement::neighbors($id);
+$next = validate_relative_next_path($_GET['next'] ?? '');
+$editUrl = static function (array $other) use ($next): string {
+    $n = ManageUI::nextForCard($next, (int)$other['id']);
+    return '/manage/card_edit.php?id=' . (int)$other['id'] . ($n !== '' ? '&next=' . urlencode($n) : '');
+};
+$cardLabel = static fn(array $c): string => mb_strimwidth(trim((string)$c['front_text']) !== '' ? (string)$c['front_text'] : (string)$c['back_text'], 0, 28, '…');
 
 ApplicationUI::useSiteTheme(SiteManagement::findByUserId($userId));
 header_html('Edit card');
 ?>
 <div class="crumbs"><a href="<?=h(ManageUI::dashboardUrl($userId))?>">My Decks</a> › <a href="/manage/category_edit.php?id=<?= (int)$card['category_id'] ?>"><?=h($card['category_name'])?></a> › <a href="<?=h($listUrl)?>"><?=h($card['subcategory_name'])?></a> › Edit card</div>
 <div class="page-head">
-  <h2>Edit card</h2>
+  <h2>Edit card <span class="small">card <?= (int)$nav['index'] ?> of <?= (int)$nav['total'] ?></span></h2>
   <div class="actions">
     <a class="button" href="<?=h($listUrl . '#card-' . $id)?>">All cards</a>
     <a class="button" href="/manage/card_add.php?subcategory_id=<?= $subcategoryId ?>">+ Add card</a>
   </div>
 </div>
+<nav class="card-nav" aria-label="Other cards in this deck">
+  <?php if ($nav['prev']): ?>
+    <a class="button small" href="<?=h($editUrl($nav['prev']))?>" title="<?=h($cardLabel($nav['prev']))?>">&larr; Previous card</a>
+  <?php else: ?>
+    <span class="button small disabled" aria-disabled="true">&larr; Previous card</span>
+  <?php endif; ?>
+  <?php if ($nav['next']): ?>
+    <a class="button small" href="<?=h($editUrl($nav['next']))?>" title="<?=h($cardLabel($nav['next']))?>">Next card &rarr;</a>
+  <?php else: ?>
+    <span class="button small disabled" aria-disabled="true">Next card &rarr;</span>
+  <?php endif; ?>
+</nav>
 <?php if ($msg): ?><p class="flash"><?=h($msg)?></p><?php endif; ?>
 <?php if ($err): ?><p class="error"><?=h($err)?></p><?php endif; ?>
 
@@ -82,6 +101,9 @@ header_html('Edit card');
     </div>
     <div class="actions">
       <button type="submit" class="button primary">Save</button>
+      <?php if ($nav['next']): ?>
+        <button type="submit" class="button" name="save_next" value="1" title="Save this card and open the next one">Save &amp; next &rarr;</button>
+      <?php endif; ?>
       <a class="button" href="<?=h(ManageUI::nextOr($listUrl . '#card-' . $id))?>">Cancel</a>
     </div>
   </form>

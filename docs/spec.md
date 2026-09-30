@@ -110,7 +110,10 @@ other people's public decks they have progress on), then the engine at
   120"). Flagged/misses passes restart at the top since they shrink.
 - Finishing a deck shows a celebration with the session tally and buttons to
   go again, shuffle, or review the misses / flagged cards.
-- Keyboard: space = flip, 1 = got it, 2 = needs review, f = flag, ←/→ = navigate.
+- **Edit this card** (owner or admin only) under the buttons opens the card
+  editor and returns to that same card afterwards (`?card=N`).
+- Keyboard: space = flip, 1 = got it, 2 = needs review, f = flag, e = edit,
+  ←/→ = navigate.
 - The score chip (top-right, every page) shows ⭐ mastered / total cards with
   "N today"; *mastered* = the card's latest mark is Got it. It links to Stats.
 

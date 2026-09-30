@@ -101,6 +101,33 @@ final class CardManagement {
         return $st->fetchAll();
     }
 
+    /**
+     * Where a card sits in its deck's display order: the previous and next
+     * cards (null at the ends), its 1-based index and the deck's card count.
+     * For "Next card" navigation on the editor.
+     *
+     * @return array{prev:?array,next:?array,index:int,total:int}
+     */
+    public static function neighbors(int $cardId): array {
+        $card = self::findById($cardId);
+        if (!$card) {
+            return ['prev' => null, 'next' => null, 'index' => 0, 'total' => 0];
+        }
+        $all = self::listForSubcategory((int)$card['subcategory_id']);
+        $prev = null;
+        $next = null;
+        $index = 0;
+        foreach ($all as $i => $row) {
+            if ((int)$row['id'] === $cardId) {
+                $index = $i + 1;
+                $prev = $all[$i - 1] ?? null;
+                $next = $all[$i + 1] ?? null;
+                break;
+            }
+        }
+        return ['prev' => $prev, 'next' => $next, 'index' => $index, 'total' => count($all)];
+    }
+
     public static function countForSubcategory(int $subcategoryId): int {
         $st = self::pdo()->prepare('SELECT COUNT(*) FROM cards WHERE subcategory_id = ?');
         $st->execute([$subcategoryId]);

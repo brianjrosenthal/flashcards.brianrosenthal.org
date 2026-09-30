@@ -102,6 +102,22 @@ final class ManageUI {
         return $next !== '' ? '&next=' . urlencode($next) : '';
     }
 
+    /**
+     * The next= return URL adjusted for a different card: a study page URL
+     * that names a card (?card=N) is pointed at $cardId so "Previous / Next
+     * card" on the editor still returns to the card being edited; any other
+     * URL is kept as it is.
+     */
+    public static function nextForCard(string $next, int $cardId): string {
+        if ($next === '' || strpos($next, '/review/study.php') === false) {
+            return $next;
+        }
+        $stripped = preg_replace('/([?&])card=\d+/', '$1', $next) ?? $next;
+        $stripped = str_replace(['?&', '&&'], ['?', '&'], $stripped);
+        $stripped = rtrim($stripped, '?&');
+        return $stripped . (strpos($stripped, '?') === false ? '?' : '&') . 'card=' . $cardId;
+    }
+
     /** $url with query parameters appended (after any it already has) and an optional #fragment. */
     public static function urlWith(string $url, array $params, string $fragment = ''): string {
         $query = http_build_query($params);

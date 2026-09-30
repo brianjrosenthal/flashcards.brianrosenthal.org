@@ -41,6 +41,16 @@ try {
     }
     $image = $imageChosen ? ImageStorage::prepareUpload($_FILES['image']) : null;
     CardManagement::update($ctx, $id, $data, $image, $removeImage);
+    if (!empty($_POST['save_next'])) {
+        // "Save & next": straight on to the next card in the deck (by the
+        // order as it stands after this save), keeping the return URL.
+        $following = CardManagement::neighbors($id)['next'];
+        if ($following !== null) {
+            $n = ManageUI::nextForCard($next, (int)$following['id']);
+            header('Location: /manage/card_edit.php?id=' . (int)$following['id'] . '&msg=' . urlencode('Card saved.') . ($n !== '' ? '&next=' . urlencode($n) : ''));
+            exit;
+        }
+    }
     if ($next !== '') {
         header('Location: ' . $next);
     } else {
