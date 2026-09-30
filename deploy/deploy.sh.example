@@ -1,0 +1,19 @@
+#!/bin/bash
+# Sync www/ to the DreamHost VPS with rsync (one password prompt).
+# config.local.php and the logs are never overwritten. Copy this file to
+# deploy/deploy.sh (git-ignored), check the host, and run:
+#   bash deploy/deploy.sh
+set -euo pipefail
+
+REMOTE="brosenthvps@vps47444.dreamhostps.com"
+REMOTE_DIR="~/flashcards.brianrosenthal.org"
+LOCAL_DIR="$(cd "$(dirname "$0")/.." && pwd)/www"
+
+rsync -avz --delete \
+  --exclude='config.local.php' \
+  --exclude='logs/*.log' \
+  --exclude='.DS_Store' \
+  "$LOCAL_DIR/" "$REMOTE:$REMOTE_DIR/"
+
+echo "Deployed. If db_migrations/ changed, apply the new files from Admin -> Migrations"
+echo "or run on the server:  bash $REMOTE_DIR/db_migrations/migrate.sh"

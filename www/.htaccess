@@ -1,0 +1,36 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Never serve these.
+  RewriteRule ^logs(/|$) - [F,L]
+  RewriteRule ^db_migrations(/|$) - [F,L]
+  RewriteRule ^lib(/|$) - [F,L]
+
+  # Real files and directories (login.php, /manage/, styles.css ...) win.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Pretty URLs for the public pages. PHP decides whose page it is:
+  #   /{slug}/{category}/{subcategory}/          (any hostname)
+  #   /{category}/{subcategory}/                 (a user's own subdomain or custom domain)
+  # Real files and directories above win, and Slugger refuses slugs that
+  # would collide with them. Routing extra hostnames to this directory is done
+  # in the DreamHost panel, not here — see docs/deployment.md.
+  RewriteRule ^([a-z0-9-]+)/?(.*)$ public_site.php?site=$1&path=$2 [L,QSA]
+  RewriteRule ^(.*)$ public_site.php?path=$1 [L,QSA]
+</IfModule>
+
+<FilesMatch "\.log$">
+  Require all denied
+</FilesMatch>
+
+<FilesMatch "^config\.local\.php(\.example)?$">
+  Require all denied
+</FilesMatch>
+
+<FilesMatch "^schema\.sql$">
+  Require all denied
+</FilesMatch>

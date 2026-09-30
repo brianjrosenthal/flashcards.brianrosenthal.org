@@ -1,0 +1,61 @@
+# ==========================================================================
+# Secrets — NEVER commit. Only the *.example templates are tracked.
+# ==========================================================================
+# Local application config (DB creds, SMTP, HMAC key, DreamObjects keys)
+config.local.php
+www/config.local.php
+
+# The deploy script carries the server login; only deploy.sh.example is tracked.
+deploy/deploy.sh
+
+# Every env secret file (.env). *.env.example templates are not matched.
+*.env
+
+# Keys and certificates of any kind.
+keys/
+*.pem
+*.p8
+
+# Any local secrets scratch dir.
+secret/
+secrets/
+
+# ==========================================================================
+# Runtime / generated — not source.
+# ==========================================================================
+# Logs (www/logs/.htaccess stays tracked so the directory is protected on deploy)
+www/logs/*
+!www/logs/.htaccess
+*.log
+
+# File cache / local runtime state
+cache/
+www/cache/
+var/
+
+# PHPUnit
+unit-tests/.phpunit.cache/
+unit-tests/tests/tmp/
+
+# ==========================================================================
+# Editor / OS cruft
+# ==========================================================================
+# Vim
+*.swp
+*.swo
+*.swn
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+
+# ==========================================================================
+# PHP artifacts
+# ==========================================================================
+*.phar
+!unit-tests/tools/phpunit.phar

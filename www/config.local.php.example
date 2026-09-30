@@ -1,0 +1,71 @@
+<?php
+// Local configuration for the Flashcards app (do not commit the real config.local.php)
+//
+// Copy this file to config.local.php and fill in your environment-specific values.
+
+define('DB_HOST', '');
+define('DB_NAME', 'flashcards_brianrosenthal');
+define('DB_USER', '');
+define('DB_PASS', '');
+
+// Application branding (used as a fallback; UI will prefer Settings::get('site_title', APP_NAME))
+define('APP_NAME', 'Flashcards');
+
+// Hostname of the main site. Every user's public page is served at /{slug}/
+// on it. Once a dedicated domain exists (e.g. myflashcards.com), set it here:
+// each user's page is then also served at {slug}.MAIN_HOST (via a wildcard DNS
+// record + proxy, see docs/deployment.md) and requests on any other hostname
+// are matched against sites.domain (a custom domain per user).
+define('MAIN_HOST', 'flashcards.brianrosenthal.org');
+
+// Former main hostnames. A request on one of these is redirected (301) to the
+// same path on MAIN_HOST, so old links keep working. Empty array = none.
+define('LEGACY_HOSTS', []);
+
+// Subdomain pages can reach this server through a proxy (e.g. a Cloudflare
+// Worker) that fetches https://MAIN_HOST and passes the visitor's hostname in
+// an X-Forwarded-Host header. That header is trusted only when the request
+// also carries X-Site-Proxy-Key equal to this value. Leave '' to ignore the
+// header entirely (the default until a dedicated domain exists).
+define('SUBDOMAIN_PROXY_KEY', '');
+
+// A password that signs in as any user — for testing only. Leave empty ('')
+// to disable, and disable it in production once testing is done.
+define('SUPER_PASSWORD', '');
+
+// SMTP configuration (e.g., Gmail with App Password)
+define('SMTP_HOST', 'smtp.gmail.com'); // smtp.gmail.com
+define('SMTP_PORT', 587);              // 587 for STARTTLS, 465 for SSL
+define('SMTP_USER', '');               // your Gmail address
+define('SMTP_PASS', '');               // app password (recommended)
+define('SMTP_SECURE', 'tls');          // 'tls' or 'ssl'
+define('SMTP_FROM_EMAIL', '');         // often the same as SMTP_USER
+define('SMTP_FROM_NAME', 'Flashcards');   // From name seen in emails
+
+// HMAC key for remember me tokens (REQUIRED for persistent login).
+// Set to a long random string, e.g., bin2hex(random_bytes(32)).
+define('REMEMBER_TOKEN_KEY', '');
+
+// ---- Image storage (Cloudflare R2, S3-compatible) ----
+// Card images are uploaded through PHP (which resizes them) into a PRIVATE
+// bucket and shown through short-lived signed URLs. Dashboard -> R2 Object
+// Storage -> the bucket -> Settings shows the "S3 API" URL; paste it as
+// R2_ENDPOINT (with or without the trailing /bucket-name). Keys: R2 -> Manage
+// R2 API Tokens -> Create API token with "Object Read & Write" on this bucket.
+// Check Admin -> Image Storage ("Test upload") once these are filled in.
+define('R2_ENDPOINT', 'https://<account-id>.r2.cloudflarestorage.com');
+define('R2_ACCESS_KEY', '');   // empty = image uploads disabled (text-only cards still work)
+define('R2_SECRET_KEY', '');
+define('R2_IMAGE_BUCKET', 'flashcards-images');
+// define('R2_REGION', 'auto');  // default 'auto'; R2 also accepts a jurisdiction such as 'eu'
+
+// Largest image file a user may upload, in bytes (default 10 MB). The server
+// resizes to 1600px on the long edge before storing, so the stored copy is
+// much smaller. PHP's own upload_max_filesize / post_max_size must allow it.
+define('IMAGE_MAX_BYTES', 10 * 1024 * 1024);
+
+// Image URLs are signed with a timestamp rounded down to WINDOW seconds (so
+// browsers can cache them) and stay valid for TTL seconds (forced to at least
+// 2 x WINDOW, at most 7 days). Defaults: 6 hours / 24 hours.
+// define('IMAGE_URL_WINDOW_SECONDS', 21600);
+// define('IMAGE_URL_TTL_SECONDS', 86400);
