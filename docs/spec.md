@@ -67,6 +67,21 @@ to manage anyone's decks. A user without a page can create one here.
   replace or remove the image. If a save fails the text comes back pre-filled
   but the image has to be chosen again (browsers do not let a page re-submit a
   file).
+- **Import pictures** (`cards.php` → Import pictures): upload a ZIP of
+  images (and/or loose image files). Every picture becomes a card with the
+  image on the front and the file name on the back, extension dropped and
+  underscores turned into spaces (`Ada_Lovelace.jpg` → *Ada Lovelace*).
+  Three steps, per the guidelines' import pattern: upload (the files are
+  unpacked into a private temp folder, nothing is created yet) → review (a
+  table with a preview of each picture, the back it will get, and a status:
+  will import / already in this deck / duplicate name in this upload /
+  skipped with the reason; a checkbox opts the "already in deck" ones in) →
+  import, which runs a few pictures per request from a progress page so a
+  hundred photos cannot hit the PHP time limit; progress is saved after every
+  picture, so a reload continues where it left off. Folders, `__MACOSX` and
+  hidden files inside the ZIP are ignored. Limits: 500 pictures per upload,
+  and the whole upload must fit the server's `post_max_size`, which the form
+  states. Pending imports expire after a day.
 - **Deleting** a deck or a category deletes everything in it — cards, their
   images in storage and everyone's progress on them — behind a confirmation
   that states the card count. (Mastery only deletes empty containers; for a
@@ -258,11 +273,18 @@ today); `schema.sql` must always be updated alongside any migration.
   URLs, diagnostics), `S3Client` (hand-rolled SigV4 client), `Deck`,
   `CardProgress` (marks, flags, positions, shuffle, score, stats),
   `QuizManagement` (rounds, judging, attempts, claims, stats),
+  `CardImageImport` (ZIP/picture import: unpack, review manifest, batched
+  commit),
   `ContentAccess` (edit = owner/admin; view = that, or public page + public
   category), `Slugger`, `UserManagement`, `UserContext`, `ActivityLog`,
   `EmailLog`, `MigrationRunner`.
 - `manage/` — dashboard, category / deck / card / page-settings pages and
-  their `_eval.php` handlers, `manage.js` (image preview).
+  their `_eval.php` handlers; the picture import wizard (`card_import.php` →
+  `card_import_upload_eval.php` → `card_import_review.php` (+
+  `card_import_preview.php` for thumbnails) → `card_import_start_eval.php` →
+  `card_import_progress.php` calling `card_import_batch_eval.php` (JSON);
+  `card_import_discard_eval.php`); `manage.js` (image preview, paste/drop an
+  image into the card form, import progress loop).
 - `review/` — `index.php` (deck picker), `study.php` (embeds the deck as JSON;
   reads are server-rendered, only writes are AJAX), `review.js`,
   `mark_card_eval.php`, `toggle_flag_eval.php`, `save_position_eval.php`

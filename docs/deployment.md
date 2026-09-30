@@ -36,10 +36,15 @@ per-domain `phprc` (`~/.php/8.x/phprc`, *Manage Websites → the domain →
 PHP → Edit phprc*) set:
 
 ```
-upload_max_filesize = 12M
-post_max_size = 16M
+upload_max_filesize = 64M
+post_max_size = 72M
 memory_limit = 256M
 ```
+
+`upload_max_filesize` covers one file, so it must exceed the largest ZIP of
+pictures anyone will import (the picture import unpacks the ZIP on the
+server); `post_max_size` covers the whole request. The import form shows the
+live `post_max_size` so people know how big a ZIP they can send in one go.
 
 `IMAGE_MAX_BYTES` in `config.local.php` (default 10 MB) must stay below
 `upload_max_filesize`. The image code raises its own memory limit to 256M

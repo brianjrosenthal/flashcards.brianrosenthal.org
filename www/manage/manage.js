@@ -150,6 +150,8 @@
       if (r.done) {
         summary.hidden = false;
         actions.hidden = false;
+        var heading = document.querySelector('.page-head h2');
+        if (heading) heading.textContent = 'Import finished';
       }
     }
 

@@ -153,7 +153,7 @@ final class CardImageImport {
     public static function backTextFromFilename(string $name): string {
         $base = basename(str_replace('\\', '/', $name));
         $dot = strrpos($base, '.');
-        if ($dot !== false && $dot > 0) {
+        if ($dot !== false) {
             $base = substr($base, 0, $dot);
         }
         $base = str_replace(['%20', '_'], ' ', $base);

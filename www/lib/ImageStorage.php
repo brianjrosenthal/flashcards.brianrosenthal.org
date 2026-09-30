@@ -70,6 +70,10 @@ final class ImageStorage {
 
     private static ?S3Client $client = null;
 
+    /** True once a client was injected (tests): uploads count as configured. */
+
+    private static bool $injected = false;
+
     // -------------------------------------------------------------------------
     // Configuration
     // -------------------------------------------------------------------------
@@ -107,6 +111,9 @@ final class ImageStorage {
      * without storage credentials still handles text cards.
      */
     public static function isConfigured(): bool {
+        if (self::$injected) {
+            return true;   // tests inject a fake client instead of credentials
+        }
         return self::config('R2_ACCESS_KEY') !== ''
             && self::config('R2_SECRET_KEY') !== ''
             && self::endpoint() !== ''
@@ -126,6 +133,7 @@ final class ImageStorage {
     public static function storage(?S3Client $inject = null): S3Client {
         if ($inject !== null) {
             self::$client = $inject;
+            self::$injected = true;
         }
         if (self::$client === null) {
             self::$client = new S3Client(
@@ -140,6 +148,7 @@ final class ImageStorage {
 
     public static function resetStorage(): void {
         self::$client = null;
+        self::$injected = false;
     }
 
     // -------------------------------------------------------------------------

@@ -43,7 +43,7 @@ final class ImageStorageTest extends TestCase
         $this->assertSame('auto', ImageStorage::region());
         $this->assertStringStartsNotWith('/', ImageStorage::endpoint());
         $this->assertStringEndsNotWith('/' . ImageStorage::bucket(), ImageStorage::endpoint(), 'a bucket suffix pasted into R2_ENDPOINT is stripped');
-        $this->assertFalse(ImageStorage::isConfigured(), 'the test config has no R2 keys; the fake client is injected instead');
+        $this->assertTrue(ImageStorage::isConfigured(), 'the test config has no R2 keys, but an injected fake client counts as configured');
         $this->assertGreaterThanOrEqual(256 * 1024, ImageStorage::maxBytes());
         $this->assertSame('https://r2-test.example', $this->storage()->endpoint(), 'tests/bootstrap.php injected the fake');
     }
