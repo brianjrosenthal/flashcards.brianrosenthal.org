@@ -45,6 +45,7 @@ header_html($sub['name'] . ' cards');
       <a class="button" href="/quiz/?subcategory=<?= $subcategoryId ?>">Quiz</a>
     <?php endif; ?>
     <a class="button primary" href="/manage/card_add.php?subcategory_id=<?= $subcategoryId ?>">+ Add card</a>
+    <a class="button" href="/manage/card_import.php?subcategory_id=<?= $subcategoryId ?>">Import pictures</a>
     <a class="button" href="/manage/subcategory_edit.php?id=<?= $subcategoryId ?>">Edit deck</a>
   </div>
 </div>
@@ -106,7 +107,7 @@ header_html($sub['name'] . ' cards');
 
 <div class="card" id="bulk">
   <h3>Add many cards at once</h3>
-  <p class="small">One card per line, front and back separated by <code>|</code> (a tab works too). Text cards only; add images one card at a time. Up to <?= CardManagement::BULK_MAX_LINES ?> lines.</p>
+  <p class="small">One card per line, front and back separated by <code>|</code> (a tab works too). Text cards only. For picture cards, <a href="/manage/card_import.php?subcategory_id=<?= $subcategoryId ?>">import a ZIP of images</a>: each file name becomes the back. Up to <?= CardManagement::BULK_MAX_LINES ?> lines.</p>
   <?php if ($bulkErr): ?><p class="error"><?=h($bulkErr)?></p><?php endif; ?>
   <form method="post" action="/manage/card_bulk_add_eval.php" class="stack">
     <input type="hidden" name="csrf" value="<?=h(csrf_token())?>">

@@ -1154,3 +1154,10 @@ table.cards-list .move-form button { background: none; border: 1px solid var(--c
 .paste-note { color: var(--color-success-dark); font-weight: 600; }
 form.drop-target { outline: 3px dashed var(--color-primary); outline-offset: 6px; border-radius: var(--radius); }
 kbd { font-family: inherit; font-size: 0.85em; padding: 1px 6px; border: 1px solid var(--color-border); border-bottom-width: 2px; border-radius: 6px; background: #fff; }
+
+/* ===== Picture import ===== */
+table.import-list td.thumb { width: 72px; }
+table.import-list td.thumb img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; display: block; background: #f3eefb; }
+table.import-list td.text { max-width: 320px; }
+table.import-list tr.status-skipped td, table.import-list tr.status-duplicate td { color: var(--color-ink-muted); }
+#import-progress .progress-track { margin: 6px 0 10px; }

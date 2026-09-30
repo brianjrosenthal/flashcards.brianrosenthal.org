@@ -93,8 +93,104 @@
     });
   }
 
+  // ---- Picture import: review page count + progress page batch loop -------
+
+  function setupImportReview() {
+    var form = document.getElementById('import-review-form');
+    if (!form) return;
+    var box = form.querySelector('input[name="import_existing"]');
+    var count = document.getElementById('import-count');
+    var btn = document.getElementById('import-start-btn');
+    if (!box || !count || !btn) return;
+    var base = parseInt(count.textContent, 10) || 0;
+    var adds = parseInt(box.getAttribute('data-adds'), 10) || 0;
+    box.addEventListener('change', function () {
+      var n = base + (box.checked ? adds : 0);
+      count.textContent = String(n);
+      btn.disabled = n === 0;
+    });
+  }
+
+  function setupImportProgress() {
+    var box = document.getElementById('import-progress');
+    if (!box || box.getAttribute('data-finished') === '1') return;
+    var token = box.getAttribute('data-token');
+    var csrf = box.getAttribute('data-csrf');
+    var fill = document.getElementById('import-progress-fill');
+    var text = document.getElementById('import-progress-text');
+    var errorEl = document.getElementById('import-progress-error');
+    var summary = document.getElementById('import-summary');
+    var createdEl = document.getElementById('import-created');
+    var failedEl = document.getElementById('import-failed');
+    var failedWrap = document.getElementById('import-failed-wrap');
+    var actions = document.getElementById('import-done-actions');
+    var failures = document.getElementById('import-failures');
+    var failureList = document.getElementById('import-failure-list');
+    var retries = 0;
+
+    function render(r) {
+      var pct = r.total > 0 ? Math.round(100 * r.processed / r.total) : 100;
+      fill.style.width = pct + '%';
+      text.textContent = r.done ? 'Done.' : ('Imported ' + r.processed + ' of ' + r.total + '\u2026 keep this page open.');
+      createdEl.textContent = String(r.created);
+      failedEl.textContent = String(r.failed);
+      failedWrap.hidden = r.failed === 0;
+      if (r.failures && r.failures.length) {
+        failureList.innerHTML = '';
+        r.failures.forEach(function (f) {
+          var li = document.createElement('li');
+          var b = document.createElement('strong');
+          b.textContent = f.source;
+          li.appendChild(b);
+          li.appendChild(document.createTextNode(' \u2014 ' + f.reason));
+          failureList.appendChild(li);
+        });
+        failures.hidden = false;
+      }
+      if (r.done) {
+        summary.hidden = false;
+        actions.hidden = false;
+      }
+    }
+
+    function step() {
+      var body = new URLSearchParams();
+      body.set('token', token);
+      body.set('csrf', csrf);
+      fetch('/manage/card_import_batch_eval.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(function (res) {
+        return res.json().then(function (json) {
+          if (!res.ok || !json.ok) throw new Error(json.error || ('Import failed (' + res.status + ')'));
+          return json;
+        });
+      }).then(function (r) {
+        retries = 0;
+        render(r);
+        if (!r.done) setTimeout(step, 50);
+      }).catch(function (e) {
+        // A transient network hiccup: try again a few times; progress is
+        // saved server-side after every picture, so nothing is lost.
+        if (retries < 3) {
+          retries++;
+          setTimeout(step, 1500 * retries);
+          return;
+        }
+        errorEl.textContent = e.message + ' Reload this page to continue where it left off.';
+        errorEl.hidden = false;
+      });
+    }
+
+    step();
+  }
+
   function init() {
     setupImageInputs();
+    setupImportReview();
+    setupImportProgress();
   }
 
   if (document.readyState === 'loading') {
