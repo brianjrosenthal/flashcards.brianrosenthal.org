@@ -190,16 +190,85 @@ final class QuizManagement {
      */
     public static function acceptedAnswers(string $backText): array {
         $out = [];
+        foreach (self::acceptedAnswerPieces($backText) as $variant) {
+            $normalized = self::normalizeAnswer($variant);
+            if ($normalized !== '' && !in_array($normalized, $out, true)) {
+                $out[] = $normalized;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * The raw (not yet normalised) accepted-answer variants of a back: each
+     * `/`, `;` or newline piece, first without its parenthesised note, then
+     * as written. listItems() needs the raw text because normalising drops
+     * the commas that separate a list.
+     */
+    public static function acceptedAnswerPieces(string $backText): array {
+        $out = [];
         foreach (preg_split('/[\/;]|\r?\n/u', $backText) ?: [] as $piece) {
             $withoutNotes = (string)preg_replace('/\([^)]*\)/u', ' ', $piece);
             foreach ([$withoutNotes, $piece] as $variant) {
-                $normalized = self::normalizeAnswer($variant);
-                if ($normalized !== '' && !in_array($normalized, $out, true)) {
-                    $out[] = $normalized;
+                if (trim($variant) !== '' && !in_array($variant, $out, true)) {
+                    $out[] = $variant;
                 }
             }
         }
         return $out;
+    }
+
+    /**
+     * The items of a list answer, each normalised: "Lennon, McCartney and
+     * Harrison" -> ['lennon', 'mccartney', 'harrison']. Commas, "and" and "&"
+     * all separate items (an Oxford comma is fine), so a list can be typed
+     * either way. A back that is not a list yields one item.
+     */
+    public static function listItems(string $raw): array {
+        $parts = preg_split('/\s*(?:,|&|\band\b)\s*/iu', $raw) ?: [];
+        $items = [];
+        foreach ($parts as $part) {
+            $n = self::normalizeAnswer($part);
+            if ($n !== '') {
+                $items[] = $n;
+            }
+        }
+        return $items;
+    }
+
+    /**
+     * Judge a typed list against an accepted list of items, ignoring order:
+     * every typed item must pair off with a distinct accepted item, exactly
+     * (correct) or within the usual typo tolerance (close). Null when the
+     * counts differ or an item has no partner.
+     */
+    private static function judgeItemSets(array $typedItems, array $acceptedItems): ?string {
+        if (count($typedItems) !== count($acceptedItems)) {
+            return null;
+        }
+        $remaining = $acceptedItems;
+        $anyClose = false;
+        foreach ($typedItems as $item) {
+            $exact = array_search($item, $remaining, true);
+            if ($exact !== false) {
+                unset($remaining[$exact]);
+                continue;
+            }
+            $found = false;
+            foreach ($remaining as $k => $candidate) {
+                $allowed = self::allowedEdits($candidate);
+                if ($allowed > 0 && self::editDistance($item, $candidate) <= $allowed) {
+                    unset($remaining[$k]);
+                    $anyClose = true;
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                return null;
+            }
+        }
+        return $anyClose ? self::RESULT_CLOSE : self::RESULT_CORRECT;
     }
 
     /**
@@ -270,6 +339,7 @@ final class QuizManagement {
      * answer's typo allowance, else RESULT_INCORRECT.
      */
     public static function judgeAnswer(string $typed, string $backText): string {
+        $rawTyped = $typed;
         $typed = self::normalizeAnswer($typed);
         if ($typed === '') return self::RESULT_INCORRECT;
 
@@ -281,6 +351,29 @@ final class QuizManagement {
             $allowed = self::allowedEdits($candidate);
             if ($allowed > 0 && self::editDistance($typed, $candidate) <= $allowed) {
                 return self::RESULT_CLOSE;
+            }
+        }
+
+        // A list answer ("red, white and blue") matches in any order, typed
+        // with commas or "and" either way; each item may carry a typo.
+        $typedItems = self::listItems($rawTyped);
+        if (count($typedItems) >= 2) {
+            $best = null;
+            foreach (self::acceptedAnswerPieces($backText) as $piece) {
+                $acceptedItems = self::listItems($piece);
+                if (count($acceptedItems) < 2) {
+                    continue;
+                }
+                $verdict = self::judgeItemSets($typedItems, $acceptedItems);
+                if ($verdict === self::RESULT_CORRECT) {
+                    return $verdict;
+                }
+                if ($verdict === self::RESULT_CLOSE) {
+                    $best = $verdict;
+                }
+            }
+            if ($best !== null) {
+                return $best;
             }
         }
         return self::RESULT_INCORRECT;

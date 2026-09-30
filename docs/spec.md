@@ -141,6 +141,13 @@ other people's public decks they have progress on), then the engine at
   near miss (edit distance with adjacent swaps counting 1: no slack under 5
   letters, 1 edit for 5–8, 2 edits for 9+; multibyte-safe, so accents count
   as one edit), **5** for an answer claimed afterwards.
+- **List answers** match in any order: when the back is a list ("Lennon,
+  McCartney, Harrison and Starr"), the typed answer is split into items on
+  commas, "and" and "&" and compared as a set, so "Starr and Lennon and
+  Harrison and McCartney" or "harrison, starr, lennon, mccartney" are exact
+  matches; a typo inside one item makes the whole answer *close*; a missing
+  or extra item is wrong. A back that is not a list is unaffected ("Trinidad
+  and Tobago" is one answer).
 - **"I was right anyway"** — any answer that scored nothing can be claimed for
   partial credit. Claiming never rewrites what was typed or how the server
   judged it; it only sets `was_overridden` and the points.

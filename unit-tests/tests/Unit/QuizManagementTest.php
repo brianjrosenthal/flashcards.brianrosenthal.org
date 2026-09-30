@@ -435,4 +435,34 @@ final class QuizManagementTest extends TestCase
         $this->assertSame([], QuizManagement::getMostMissedCardsForUser($this->charlie->id, 20, Deck::of(Deck::TYPE_SUBCATEGORY, $other)));
         $this->assertSame([], QuizManagement::getMostMissedCardsForUser(9999));
     }
+
+    public function testListItemsSplitOnCommasAndAnd(): void
+    {
+        $this->assertSame(['lennon', 'mccartney', 'harrison'], QuizManagement::listItems('Lennon, McCartney and Harrison'));
+        $this->assertSame(['lennon', 'mccartney', 'harrison'], QuizManagement::listItems('Lennon, McCartney, and Harrison'));
+        $this->assertSame(['lennon', 'mccartney'], QuizManagement::listItems('Lennon & McCartney'));
+        $this->assertSame(['beatles', 'stones'], QuizManagement::listItems('the Beatles and the Stones'), 'articles go per item');
+        $this->assertSame(['sandwich'], QuizManagement::listItems('sandwich'), '"and" inside a word is not a separator');
+        $this->assertSame(['paris'], QuizManagement::listItems('Paris'));
+    }
+
+    public function testListAnswersMatchInAnyOrderWithCommasOrAnd(): void
+    {
+        $back = 'Lennon, McCartney, Harrison and Starr';
+        $this->assertSame('correct', QuizManagement::judgeAnswer('Lennon, McCartney, Harrison and Starr', $back));
+        $this->assertSame('correct', QuizManagement::judgeAnswer('Starr and Harrison and McCartney and Lennon', $back));
+        $this->assertSame('correct', QuizManagement::judgeAnswer('harrison, starr, lennon, mccartney', $back));
+        $this->assertSame('correct', QuizManagement::judgeAnswer('McCartney & Starr & Lennon & Harrison', $back));
+        $this->assertSame('close', QuizManagement::judgeAnswer('Starr, Harrison, McCartny, Lennon', $back), 'one typo in one item');
+        $this->assertSame('incorrect', QuizManagement::judgeAnswer('Lennon, McCartney, Harrison', $back), 'a missing item');
+        $this->assertSame('incorrect', QuizManagement::judgeAnswer('Lennon, McCartney, Harrison, Starr, Best', $back), 'an extra item');
+        $this->assertSame('incorrect', QuizManagement::judgeAnswer('Lennon, Lennon, Harrison, Starr', $back), 'each item pairs off once');
+
+        // Works with the other accepted-answer separators too.
+        $this->assertSame('correct', QuizManagement::judgeAnswer('white and red and blue', 'red, white and blue / the tricolour'));
+        $this->assertSame('correct', QuizManagement::judgeAnswer('tricolour', 'red, white and blue / the tricolour'));
+        // Non-list backs are unchanged: "Trinidad and Tobago" is still one answer.
+        $this->assertSame('correct', QuizManagement::judgeAnswer('Trinidad and Tobago', 'Trinidad and Tobago'));
+        $this->assertSame('incorrect', QuizManagement::judgeAnswer('Paris, Rome', 'Paris'));
+    }
 }
