@@ -59,8 +59,8 @@ $sourceCards = [
         'blurb' => 'Works through the deck, starting with whatever you have practiced least recently.',
     ],
     QuizManagement::SOURCE_MISSES => [
-        'name' => 'Cards I miss',
-        'blurb' => 'Cards marked Need More Review or flagged, plus any you missed in a quiz and have not got right since.',
+        'name' => 'Cards I miss or flagged',
+        'blurb' => 'Every card you flagged, every card marked Need More Review, and any you missed in a quiz and have not got right since.',
     ],
 ];
 

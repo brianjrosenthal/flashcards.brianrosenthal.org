@@ -65,6 +65,9 @@ to manage anyone's decks. A user without a page can create one here.
   Next card links in the deck's display order and a **Save & next** button,
   so a whole deck can be tidied up in one pass. Opened from the study page,
   the return link follows along to whichever card is being edited.
+- The editor also has a **Flag this card** toggle: your own flag (the same
+  one as on the study page), so a card you spot while editing lands in your
+  Flagged tab.
 - **Card add/edit**: an image file (JPEG, PNG, WebP or GIF, up to
   `IMAGE_MAX_BYTES`, previewed before upload), front text, back text; *Add
   another card after this one* keeps the form open for fast entry. Editing can
@@ -122,9 +125,9 @@ other people's public decks they have progress on), then the engine at
   "N today"; *mastered* = the card's latest mark is Got it. It links to Stats.
 
 **Quiz** (`/quiz/`): recall practice — see the front, type the back.
-- Launcher: pick the deck, the pool (**All cards** or **Cards I miss** = latest
-  flashcard mark is Need More Review, or flagged, or missed in a quiz and not
-  gotten right since) and a round length (10 / 20 / 40 / all). Counts sit
+- Launcher: pick the deck, the pool (**All cards** or **Cards I miss or
+  flagged** = flagged, or latest flashcard mark is Need More Review, or missed
+  in a quiz and not gotten right since) and a round length (10 / 20 / 40 / all). Counts sit
   beside each pool and follow the chosen deck; Start is disabled on an empty
   pool.
 - Rounds deal least-recently-quizzed cards first (never-quizzed lead), then

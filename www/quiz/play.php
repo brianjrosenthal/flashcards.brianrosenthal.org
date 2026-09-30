@@ -60,7 +60,7 @@ header_html('Quiz: ' . $deck->label());
     <h2 class="quiz-title">Quiz</h2>
     <span class="quiz-deck-chip"><?=h($deck->label())?></span>
     <?php if ($source === QuizManagement::SOURCE_MISSES): ?>
-      <span class="quiz-deck-chip quiz-source-chip">Cards I miss</span>
+      <span class="quiz-deck-chip quiz-source-chip">Cards I miss or flagged</span>
     <?php endif; ?>
   </div>
   <a class="button small" href="/quiz/?<?=h($settingsQuery)?>">Change settings</a>

@@ -410,11 +410,11 @@ final class CardProgressTest extends TestCase
 
     public function testIsCardFlaggedReadsTheViewersOwnFlag(): void {
         $cardId = $this->tree['card_ids'][0];
-        $this->assertFalse(CardProgress::isCardFlagged($this->owner->id, $cardId));
-        CardProgress::setCardFlag($this->owner, $cardId, true);
-        $this->assertTrue(CardProgress::isCardFlagged($this->owner->id, $cardId));
-        $this->assertFalse(CardProgress::isCardFlagged($this->owner->id + 1000, $cardId), 'flags are per viewer');
-        CardProgress::setCardFlag($this->owner, $cardId, false);
-        $this->assertFalse(CardProgress::isCardFlagged($this->owner->id, $cardId));
+        $this->assertFalse(CardProgress::isCardFlagged($this->charlie->id, $cardId));
+        CardProgress::setCardFlag($this->charlie, $cardId, true);
+        $this->assertTrue(CardProgress::isCardFlagged($this->charlie->id, $cardId));
+        $this->assertFalse(CardProgress::isCardFlagged($this->charlie->id + 1000, $cardId), 'flags are per viewer');
+        CardProgress::setCardFlag($this->charlie, $cardId, false);
+        $this->assertFalse(CardProgress::isCardFlagged($this->charlie->id, $cardId));
     }
 }
