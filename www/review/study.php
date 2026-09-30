@@ -49,6 +49,19 @@ $isShuffled = $canSave && CardProgress::isDeckShuffled($viewerId, $deck);
 $persistPosition = $canSave && $filter === CardProgress::FILTER_ALL;
 $startAt = $persistPosition ? min(CardProgress::deckPositionFor($viewerId, $deck), count($cards)) : 0;
 
+// ?card=N (the edit page sends you back here) lands on that card whatever
+// the saved position says.
+$returnToCard = (int)($_GET['card'] ?? 0);
+if ($returnToCard > 0) {
+    foreach ($cards as $i => $row) {
+        if ((int)$row['id'] === $returnToCard) {
+            $startAt = $i;
+            break;
+        }
+    }
+}
+$canEdit = $deck->canEdit($ctx);
+
 $deckJson = array_map(fn($row) => [
     'id' => $row['id'],
     'front_text' => $row['front_text'],
@@ -195,7 +208,10 @@ header_html($deck->label());
       <button type="button" class="button mark-btn mark-miss" id="btn-miss" title="Press 2">Need More Review</button>
       <button type="button" class="button mark-btn mark-got" id="btn-got" title="Press 1">Got it! &#10024;</button>
     </div>
-    <p class="keyboard-hint small">space = flip &nbsp;·&nbsp; &#8592; &#8594; = back / forward &nbsp;·&nbsp; 1 = got it &nbsp;·&nbsp; 2 = need more review<?= $canSave ? ' &nbsp;·&nbsp; f = flag' : '' ?></p>
+    <?php if ($canEdit): ?>
+      <p class="card-tools small"><a id="edit-card-link" href="#" title="Edit this card (e)">&#9998; Edit this card</a></p>
+    <?php endif; ?>
+    <p class="keyboard-hint small">space = flip &nbsp;·&nbsp; &#8592; &#8594; = back / forward &nbsp;·&nbsp; 1 = got it &nbsp;·&nbsp; 2 = need more review<?= $canSave ? ' &nbsp;·&nbsp; f = flag' : '' ?><?= $canEdit ? ' &nbsp;·&nbsp; e = edit' : '' ?></p>
   </div>
 
   <div class="card deck-done hidden" id="deck-done">
@@ -240,6 +256,8 @@ header_html($deck->label());
     const DECK_ID = <?= $deck->id ?>;
     const CSRF = <?= json_encode($canSave ? csrf_token() : '', $jsonFlags) ?>;
     const CAN_SAVE = <?= $canSave ? 'true' : 'false' ?>;
+    const CAN_EDIT = <?= $canEdit ? 'true' : 'false' ?>;
+    const THIS_URL = <?= json_encode($thisUrl, $jsonFlags) ?>;
   </script>
   <?= ApplicationUI::jsScript('/review/review.js') ?>
 <?php endif; ?>

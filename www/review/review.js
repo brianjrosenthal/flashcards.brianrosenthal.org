@@ -148,7 +148,22 @@
     // Forward only appears once this card has been marked — the way ahead is
     // earned card by card. (concealed, not hidden, so the card doesn't shift.)
     btnNext.classList.toggle('concealed', !entry.marked);
+    renderEditLink(entry);
     preloadNextImage();
+  }
+
+  // "Edit this card" follows the card on screen (owner/admin only) and the
+  // editor returns here, to this very card, after saving.
+  function editUrlFor(entry) {
+    return '/manage/card_edit.php?id=' + entry.id + '&next=' + encodeURIComponent(THIS_URL + '&card=' + entry.id);
+  }
+  function renderEditLink(entry) {
+    if (!editLink) return;
+    editLink.href = editUrlFor(entry);
+  }
+  function openEditor() {
+    if (!editLink || idx >= DECK.length) return;
+    window.location.href = editUrlFor(DECK[idx]);
   }
 
   function flipCard() {
@@ -246,6 +261,7 @@
     else if (e.key === '1') { markCurrent('got_it'); }
     else if (e.key === '2') { markCurrent('needs_review'); }
     else if (e.key === 'f' || e.key === 'F') { toggleFlag(); }
+    else if ((e.key === 'e' || e.key === 'E') && typeof CAN_EDIT !== 'undefined' && CAN_EDIT) { openEditor(); }
   });
 
   renderCard();
