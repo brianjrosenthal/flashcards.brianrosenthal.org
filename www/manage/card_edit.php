@@ -6,6 +6,7 @@ require_once __DIR__ . '/../lib/ManageUI.php';
 require_once __DIR__ . '/../lib/ContentAccess.php';
 require_once __DIR__ . '/../lib/CardManagement.php';
 require_once __DIR__ . '/../lib/ImageStorage.php';
+require_once __DIR__ . '/../lib/CardProgress.php';
 Application::init();
 require_login();
 
@@ -35,6 +36,8 @@ $editUrl = static function (array $other) use ($next): string {
     $n = ManageUI::nextForCard($next, (int)$other['id']);
     return '/manage/card_edit.php?id=' . (int)$other['id'] . ($n !== '' ? '&next=' . urlencode($n) : '');
 };
+$isFlagged = CardProgress::isCardFlagged($ctx->id, $id);
+$selfUrl = '/manage/card_edit.php?id=' . $id . ($next !== '' ? '&next=' . urlencode($next) : '');
 $cardLabel = static fn(array $c): string => mb_strimwidth(trim((string)$c['front_text']) !== '' ? (string)$c['front_text'] : (string)$c['back_text'], 0, 28, '…');
 
 ApplicationUI::useSiteTheme(SiteManagement::findByUserId($userId));
@@ -59,6 +62,15 @@ header_html('Edit card');
   <?php else: ?>
     <span class="button small disabled" aria-disabled="true">Next card &rarr;</span>
   <?php endif; ?>
+  <form method="post" action="/manage/card_flag_eval.php" class="card-nav-flag">
+    <input type="hidden" name="csrf" value="<?=h(csrf_token())?>">
+    <input type="hidden" name="id" value="<?= $id ?>">
+    <input type="hidden" name="flagged" value="<?= $isFlagged ? '0' : '1' ?>">
+    <input type="hidden" name="return" value="<?=h($selfUrl)?>">
+    <button type="submit" class="button small flag-toggle<?= $isFlagged ? ' is-flagged' : '' ?>" aria-pressed="<?= $isFlagged ? 'true' : 'false' ?>" title="<?= $isFlagged ? 'Remove your flag from this card' : 'Flag this card for yourself (shows in your Flagged tab)' ?>">
+      <?= $isFlagged ? '&#9873; Flagged' : '&#9872; Flag this card' ?>
+    </button>
+  </form>
 </nav>
 <?php if ($msg): ?><p class="flash"><?=h($msg)?></p><?php endif; ?>
 <?php if ($err): ?><p class="error"><?=h($err)?></p><?php endif; ?>

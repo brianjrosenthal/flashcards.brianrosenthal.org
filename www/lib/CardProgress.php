@@ -179,6 +179,13 @@ final class CardProgress {
     }
 
     /** Save the viewer's flag on a card. Returns the stored value. */
+    /** Whether the viewer has flagged the card. */
+    public static function isCardFlagged(int $viewerId, int $cardId): bool {
+        $st = self::pdo()->prepare('SELECT is_flagged FROM user_card_state WHERE user_id = ? AND card_id = ?');
+        $st->execute([$viewerId, $cardId]);
+        return (bool)$st->fetchColumn();
+    }
+
     public static function setCardFlag(UserContext $ctx, int $cardId, bool $flagged): bool {
         self::viewableDeckOfCard($ctx, $cardId);
 

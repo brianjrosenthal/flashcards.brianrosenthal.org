@@ -61,6 +61,10 @@ to manage anyone's decks. A user without a page can create one here.
   takes one card per line as `front | back` (a tab also separates) — the
   quickest way to enter a text-only deck. All-or-nothing: a bad line names its
   line number and nothing is saved.
+- **Card editor navigation**: the editor shows "card N of M" with Previous /
+  Next card links in the deck's display order and a **Save & next** button,
+  so a whole deck can be tidied up in one pass. Opened from the study page,
+  the return link follows along to whichever card is being edited.
 - **Card add/edit**: an image file (JPEG, PNG, WebP or GIF, up to
   `IMAGE_MAX_BYTES`, previewed before upload), front text, back text; *Add
   another card after this one* keeps the form open for fast entry. Editing can

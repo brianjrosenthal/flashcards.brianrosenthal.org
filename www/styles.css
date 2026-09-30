@@ -1168,3 +1168,7 @@ table.import-list tr.status-skipped td, table.import-list tr.status-duplicate td
 
 .card-nav { display: flex; gap: 8px; margin: -4px 0 14px; flex-wrap: wrap; }
 .card-nav .button.disabled { opacity: 0.45; pointer-events: none; }
+
+.card-nav-flag { display: inline; margin: 0 0 0 auto; }
+.flag-toggle.is-flagged { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+.flag-toggle.is-flagged:hover { background: var(--color-accent-dark); }

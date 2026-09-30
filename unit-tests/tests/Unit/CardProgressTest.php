@@ -407,4 +407,14 @@ final class CardProgressTest extends TestCase
         $this->assertCount(2, CardProgress::getMostMissedCards($this->charlie->id, null, $this->catDeck));
         $this->assertCount(0, CardProgress::getMostMissedCards($this->admin->id));
     }
+
+    public function testIsCardFlaggedReadsTheViewersOwnFlag(): void {
+        $cardId = $this->tree['card_ids'][0];
+        $this->assertFalse(CardProgress::isCardFlagged($this->owner->id, $cardId));
+        CardProgress::setCardFlag($this->owner, $cardId, true);
+        $this->assertTrue(CardProgress::isCardFlagged($this->owner->id, $cardId));
+        $this->assertFalse(CardProgress::isCardFlagged($this->owner->id + 1000, $cardId), 'flags are per viewer');
+        CardProgress::setCardFlag($this->owner, $cardId, false);
+        $this->assertFalse(CardProgress::isCardFlagged($this->owner->id, $cardId));
+    }
 }
