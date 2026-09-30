@@ -1150,3 +1150,7 @@ table.cards-list td.text { white-space: pre-wrap; max-width: 320px; }
 table.cards-list .move-form { display: inline; }
 table.cards-list .move-form button { background: none; border: 1px solid var(--color-border); border-radius: 6px; cursor: pointer; padding: 1px 6px; font-family: inherit; }
 .image-preview { max-width: 320px; max-height: 240px; object-fit: contain; border-radius: 10px; display: block; margin: 6px 0; }
+
+.paste-note { color: var(--color-success-dark); font-weight: 600; }
+form.drop-target { outline: 3px dashed var(--color-primary); outline-offset: 6px; border-radius: var(--radius); }
+kbd { font-family: inherit; font-size: 0.85em; padding: 1px 6px; border: 1px solid var(--color-border); border-bottom-width: 2px; border-radius: 6px; background: #fff; }

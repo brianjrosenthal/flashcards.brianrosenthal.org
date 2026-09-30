@@ -52,10 +52,11 @@ header_html('New card');
     <?= ManageUI::nextInputHtml() ?>
     <?php if ($imagesEnabled): ?>
       <label>Front (image) <span class="hint">optional — a photo, a map, a diagram</span>
-        <input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif" data-preview-target="image-preview">
+        <input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif" data-preview-target="image-preview" data-paste-note="paste-note">
       </label>
       <img id="image-preview" class="image-preview" hidden alt="">
-      <p class="small">JPEG, PNG, WebP or GIF up to <?=h(ImageStorage::humanBytes(ImageStorage::maxBytes()))?>; larger pictures are resized to <?= ImageStorage::MAX_LONG_EDGE ?>px.</p>
+      <p id="paste-note" class="small paste-note" hidden></p>
+      <p class="small">JPEG, PNG, WebP or GIF up to <?=h(ImageStorage::humanBytes(ImageStorage::maxBytes()))?>; larger pictures are resized to <?= ImageStorage::MAX_LONG_EDGE ?>px. Tip: copy a picture and press <kbd>&#8984;V</kbd> (or drag it onto this form) to use it as the front.</p>
     <?php else: ?>
       <p class="notice">Image uploads are disabled until an admin configures Image Storage. Text cards still work.</p>
     <?php endif; ?>
