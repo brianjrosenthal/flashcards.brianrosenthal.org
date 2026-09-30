@@ -1161,3 +1161,7 @@ table.import-list td.thumb img { width: 64px; height: 64px; object-fit: cover; b
 table.import-list td.text { max-width: 320px; }
 table.import-list tr.status-skipped td, table.import-list tr.status-duplicate td { color: var(--color-ink-muted); }
 #import-progress .progress-track { margin: 6px 0 10px; }
+
+.card-tools { text-align: center; margin: 4px 0 0; }
+.card-tools a { color: var(--color-ink-muted); text-decoration: none; border: 1px solid var(--color-border); border-radius: 999px; padding: 3px 12px; }
+.card-tools a:hover { color: var(--color-primary-dark); border-color: var(--color-primary); }

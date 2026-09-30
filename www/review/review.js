@@ -21,6 +21,7 @@
   var backEl = document.getElementById('card-back');
   var sourceEl = document.getElementById('card-source');   // only when studying a whole category
   var flagBtn = document.getElementById('flag-btn');        // absent when CAN_SAVE is false
+  var editLink = document.getElementById('edit-card-link'); // only for the deck's owner or an admin
   var btnGot = document.getElementById('btn-got');
   var btnMiss = document.getElementById('btn-miss');
   var btnPrev = document.getElementById('btn-prev');
