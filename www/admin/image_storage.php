@@ -71,6 +71,7 @@ header_html('Image Storage');
     <tr><th>Region</th><td><code><?=h(ImageStorage::region())?></code></td></tr>
     <tr><th>Bucket</th><td><code><?=h($bucket !== '' ? $bucket : '(unset)')?></code></td></tr>
     <tr><th>Upload limit</th><td><?=h(ImageStorage::humanBytes(ImageStorage::maxBytes()))?> per image (<code>IMAGE_MAX_BYTES</code>; PHP's <code>upload_max_filesize</code> is <?=h((string)ini_get('upload_max_filesize'))?>, <code>post_max_size</code> <?=h((string)ini_get('post_max_size'))?>)</td></tr>
+    <tr><th>Diagnose a failed upload</th><td><a class="button small" href="/admin/image_size_test.php">Image size test</a> <span class="small">— every limit in play, and a dry-run upload of the photo that failed.</span></td></tr>
     <tr><th>Images in the database</th><td><?= count($dbKeys) ?> card image(s), so <?= count($expected) ?> object(s) expected in the bucket (each has a thumbnail)</td></tr>
     <?php if ($configured): ?>
       <?php if ($probe['error'] !== null): ?>

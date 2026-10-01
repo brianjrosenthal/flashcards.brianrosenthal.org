@@ -127,6 +127,12 @@ final class ImageStorageTest extends TestCase
             ImageStorage::prepareUpload(['error' => UPLOAD_ERR_INI_SIZE, 'tmp_name' => '']);
             $this->fail('too big');
         } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('upload_max_filesize = ' . ini_get('upload_max_filesize'), $e->getMessage(), 'PHP refused it: name PHP\'s limit, not ours');
+        }
+        try {
+            ImageStorage::prepareUpload(['error' => UPLOAD_ERR_FORM_SIZE, 'tmp_name' => '']);
+            $this->fail('too big');
+        } catch (InvalidArgumentException $e) {
             $this->assertStringContainsString('larger than ' . ImageStorage::humanBytes(ImageStorage::maxBytes()), $e->getMessage());
         }
         // Outside a web SAPI any readable file stands in for an upload.

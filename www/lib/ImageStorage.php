@@ -171,6 +171,11 @@ final class ImageStorage {
             case UPLOAD_ERR_OK:
                 break;
             case UPLOAD_ERR_INI_SIZE:
+                // PHP itself refused the file: its own limit is the one to raise.
+                throw new InvalidArgumentException(
+                    'That image is larger than the server\'s upload limit (upload_max_filesize = '
+                    . ini_get('upload_max_filesize') . '). An admin can raise it in phprc; see Admin → Image Storage.'
+                );
             case UPLOAD_ERR_FORM_SIZE:
                 throw new InvalidArgumentException('That image is larger than ' . self::humanBytes(self::maxBytes()) . '.');
             case UPLOAD_ERR_NO_FILE:
@@ -190,7 +195,10 @@ final class ImageStorage {
             throw new InvalidArgumentException('The chosen image is empty.');
         }
         if ($size > self::maxBytes()) {
-            throw new InvalidArgumentException('That image is larger than ' . self::humanBytes(self::maxBytes()) . '.');
+            throw new InvalidArgumentException(
+                'That image is ' . self::humanBytes($size) . ', larger than the ' . self::humanBytes(self::maxBytes())
+                . ' allowed (IMAGE_MAX_BYTES in config.local.php). Shrink it or raise the limit.'
+            );
         }
         $bytes = @file_get_contents($tmp);
         if ($bytes === false) {
