@@ -417,4 +417,30 @@ final class CardProgressTest extends TestCase
         CardProgress::setCardFlag($this->charlie, $cardId, false);
         $this->assertFalse(CardProgress::isCardFlagged($this->charlie->id, $cardId));
     }
+
+    public function testDeckPickerListsEveryonesPublicDecks(): void
+    {
+        // Charlie's deck exists from setUp. Lilly has a public page with one
+        // public and one private category; Dad has studied nothing of hers.
+        $lilly = test_seed_user('lilly@example.com', 'Lilly');
+        $lillyTree = test_seed_tree($lilly, 'lilly', 1);
+        $private = CategoryManagement::create($lilly, $lilly->id, ['name' => 'Secret', 'is_public' => 0]);
+        SubcategoryManagement::create($lilly, $private, ['name' => 'Hidden deck']);
+        $dad = test_seed_user('dad@example.com', 'Dad');
+
+        $names = static fn(array $decks): array => array_map(
+            static fn(array $d): string => $d['owner_first_name'] . ':' . $d['category']['name'] . ($d['is_mine'] ? '*' : ''),
+            $decks
+        );
+        $this->assertSame(['Charlie:US History', 'Lilly:US History'], $names(CardProgress::listDecksForUser($dad->id)), 'public decks of everyone, private ones hidden');
+        $this->assertSame(['US History*', 'Lilly:US History'], array_map(static fn(string $n): string => str_replace('Charlie:', '', $n), $names(CardProgress::listDecksForUser($this->charlie->id))));
+
+        // A private page hides its decks ...
+        SiteManagement::updateSiteContent($lilly, $lillyTree['site_id'], ['is_public' => false]);
+        $this->assertSame(['Charlie:US History'], $names(CardProgress::listDecksForUser($dad->id)));
+
+        // ... unless the viewer already has progress on one of them.
+        CardProgress::markCard($dad, $lillyTree['card_ids'][0], CardProgress::MARK_GOT_IT);
+        $this->assertSame(['Charlie:US History', 'Lilly:US History'], $names(CardProgress::listDecksForUser($dad->id)));
+    }
 }

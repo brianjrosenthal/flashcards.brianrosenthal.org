@@ -418,14 +418,24 @@ final class CardProgress {
         $st->execute([$viewerId]);
         $mine = $st->fetchAll();
 
+        // Other people's decks: every category on a public page that is itself
+        // public, plus any the viewer has progress on (kept even if it has
+        // since gone private, so their marks stay reachable).
         $st = $pdo->prepare(
-            'SELECT DISTINCT c.*, u.first_name AS owner_first_name
+            'SELECT c.*, u.first_name AS owner_first_name
              FROM categories c
              INNER JOIN users u ON u.id = c.user_id
-             INNER JOIN subcategories s ON s.category_id = c.id
-             INNER JOIN cards k ON k.subcategory_id = s.id
-             INNER JOIN user_card_state x ON x.card_id = k.id AND x.user_id = ?
+             LEFT JOIN sites st ON st.user_id = c.user_id
              WHERE c.user_id <> ?
+               AND (
+                 (st.is_public = 1 AND c.is_public = 1)
+                 OR EXISTS (
+                   SELECT 1 FROM user_card_state x
+                   INNER JOIN cards k ON k.id = x.card_id
+                   INNER JOIN subcategories s ON s.id = k.subcategory_id
+                   WHERE s.category_id = c.id AND x.user_id = ?
+                 )
+               )
              ORDER BY u.first_name, c.sort_order, c.name'
         );
         $st->execute([$viewerId, $viewerId]);
