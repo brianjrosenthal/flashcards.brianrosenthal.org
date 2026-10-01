@@ -85,7 +85,8 @@ CREATE TABLE schema_migrations (
 ) ENGINE=InnoDB;
 
 INSERT IGNORE INTO schema_migrations (filename) VALUES
-  ('001_initial_schema.sql');
+  ('001_initial_schema.sql'),
+  ('002_quiz_direction.sql');
 
 -- ===== Sites =====
 -- One public page per user, served at /{slug}/ on the main host (and, once a
@@ -233,6 +234,7 @@ CREATE TABLE quiz_attempts (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   card_id INT NOT NULL,
+  direction ENUM('front','back') NOT NULL DEFAULT 'front' COMMENT 'front = saw the front, typed the back; back = the reverse',
   answer_text VARCHAR(255) NOT NULL DEFAULT '',
   result ENUM('correct','close','incorrect') NOT NULL,
   was_overridden TINYINT(1) NOT NULL DEFAULT 0,

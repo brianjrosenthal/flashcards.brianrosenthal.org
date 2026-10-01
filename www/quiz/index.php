@@ -35,6 +35,10 @@ $selectedSource = (string)($_GET['source'] ?? QuizManagement::SOURCE_ALL);
 if (!QuizManagement::isValidSource($selectedSource)) {
     $selectedSource = QuizManagement::SOURCE_ALL;
 }
+$selectedDirection = (string)($_GET['direction'] ?? QuizManagement::DIRECTION_FRONT_TO_BACK);
+if (!QuizManagement::isValidDirection($selectedDirection)) {
+    $selectedDirection = QuizManagement::DIRECTION_FRONT_TO_BACK;
+}
 $selectedCount = (int)($_GET['count'] ?? 20);
 if (!in_array($selectedCount, [0, 10, 20, 40], true)) {
     $selectedCount = 20;
@@ -45,7 +49,7 @@ if (!in_array($selectedCount, [0, 10, 20, 40], true)) {
 $poolCounts = [QuizManagement::SOURCE_ALL => 0, QuizManagement::SOURCE_MISSES => 0];
 if ($selectedDeck !== null) {
     foreach (array_keys($poolCounts) as $source) {
-        $poolCounts[$source] = QuizManagement::countAvailableQuestions($userId, $selectedDeck, $source);
+        $poolCounts[$source] = QuizManagement::countAvailableQuestions($userId, $selectedDeck, $source, $selectedDirection);
     }
 }
 if ($poolCounts[$selectedSource] === 0 && $poolCounts[QuizManagement::SOURCE_ALL] > 0) {
@@ -53,6 +57,16 @@ if ($poolCounts[$selectedSource] === 0 && $poolCounts[QuizManagement::SOURCE_ALL
 }
 $canStart = $poolCounts[$selectedSource] > 0;
 
+$directionCards = [
+    QuizManagement::DIRECTION_FRONT_TO_BACK => [
+        'name' => 'See the front, type the back',
+        'blurb' => 'The picture or prompt is shown; you type what is on the back.',
+    ],
+    QuizManagement::DIRECTION_BACK_TO_FRONT => [
+        'name' => 'See the back, type the front',
+        'blurb' => 'The back (a definition, say) is shown; you type the front. Cards whose front is only a picture are skipped.',
+    ],
+];
 $sourceCards = [
     QuizManagement::SOURCE_ALL => [
         'name' => 'All cards',
@@ -115,10 +129,25 @@ header_html('Quiz');
   </fieldset>
 
   <fieldset class="quiz-fieldset">
+    <legend>Which way round?</legend>
+    <div class="quiz-source-picks">
+      <?php foreach ($directionCards as $direction => $card): ?>
+        <label class="quiz-source-pick" data-direction="<?=h($direction)?>">
+          <input type="radio" name="direction" value="<?=h($direction)?>" <?= $selectedDirection === $direction ? 'checked' : '' ?>>
+          <span class="quiz-source-body">
+            <span class="quiz-source-name"><?=h($card['name'])?></span>
+            <span class="quiz-source-blurb small"><?=h($card['blurb'])?></span>
+          </span>
+        </label>
+      <?php endforeach; ?>
+    </div>
+  </fieldset>
+
+  <fieldset class="quiz-fieldset">
     <legend>Which cards?</legend>
     <div class="quiz-source-picks">
       <?php foreach ($sourceCards as $source => $card): $count = $poolCounts[$source]; ?>
-        <label class="quiz-source-pick<?= $count === 0 ? ' empty' : '' ?>" data-source="<?=h($source)?>">
+        <label class="quiz-source-pick quiz-pool-pick<?= $count === 0 ? ' empty' : '' ?>" data-source="<?=h($source)?>">
           <input type="radio" name="source" value="<?=h($source)?>" <?= $selectedSource === $source ? 'checked' : '' ?> <?= $count === 0 ? 'disabled' : '' ?>>
           <span class="quiz-source-body">
             <span class="quiz-source-name"><?=h($card['name'])?>

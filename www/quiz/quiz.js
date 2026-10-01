@@ -1,5 +1,5 @@
-// Typed-quiz engine. The page embeds QUESTIONS (card fronts only — the backs
-// stay on the server), ANSWER_LIST (answer texts for the letter hint),
+// Typed-quiz engine. The page embeds QUESTIONS (prompt sides only — the
+// answer sides stay on the server), ANSWER_LIST (answer texts for the letter hint),
 // ROUND_SETTINGS, and CSRF. Every answer POSTs to answer_eval.php and waits
 // for the verdict; nothing is judged in the browser.
 (function () {
@@ -160,21 +160,22 @@
       .then(function (r) { return r.json(); });
   }
 
-  // The front of a card: its image (when it has one) above its text (when it
-  // has any). Every card has at least one of the two.
+  // The prompt side of a card: front-to-back that is the front's image (when
+  // it has one) above its text (when it has any); back-to-front it is the
+  // back's text. Every prompt has at least one of the two.
   function renderPrompt(el, q) {
     el.textContent = '';
-    if (q.image_url) {
+    if (q.prompt_image_url) {
       var img = document.createElement('img');
       img.className = 'flashcard-image';
-      img.src = q.image_url;
-      img.alt = q.front_text ? '' : 'Card image';
+      img.src = q.prompt_image_url;
+      img.alt = q.prompt_text ? '' : 'Card image';
       el.appendChild(img);
     }
-    if (q.front_text) {
+    if (q.prompt_text) {
       var text = document.createElement('div');
       text.className = 'quiz-prompt-text';
-      text.textContent = q.front_text;
+      text.textContent = q.prompt_text;
       el.appendChild(text);
     }
   }
@@ -182,11 +183,13 @@
   // Preload the next card's image so it appears the moment Next is pressed.
   function preloadNextImage() {
     var next = questions[idx + 1];
-    if (next && next.image_url) {
+    if (next && next.prompt_image_url) {
       var img = new Image();
-      img.src = next.image_url;
+      img.src = next.prompt_image_url;
     }
   }
+
+  var BACK_TO_FRONT = ROUND_SETTINGS.direction === 'back';
 
   function renderProgress() {
     if (reviewIdx !== null) {
@@ -352,7 +355,8 @@
 
     postForm('/quiz/answer_eval.php', {
       card_id: questions[idx].card_id,
-      answer: answer
+      answer: answer,
+      direction: ROUND_SETTINGS.direction || 'front'
     })
       .then(function (res) {
         busy = false;
@@ -401,11 +405,14 @@
       cheer = pick(KIND_MISSES);
     }
 
+    // "front" is the prompt side (shown small), "back" the answer side (big):
+    // back-to-front swaps them. The card's image rides along with the front.
     answers[idx] = {
       result: res.result,
       points: res.points,
-      front: res.front_text,
-      back: res.back_text,
+      front: BACK_TO_FRONT ? res.back_text : res.front_text,
+      back: BACK_TO_FRONT ? res.front_text : res.back_text,
+      image: res.image_url || null,
       typed: typed,
       claimed: false,
       canClaim: res.can_claim_correct,
@@ -442,7 +449,16 @@
     fbTitle.textContent = live ? a.title : 'You answered this one already';
     fbFront.textContent = a.front || '';
     fbFront.classList.toggle('hidden', !a.front);
-    fbBack.textContent = a.back;
+    fbBack.textContent = '';
+    if (BACK_TO_FRONT && a.image) {
+      // The answer is the front, so show its picture with the text.
+      var answerImg = document.createElement('img');
+      answerImg.className = 'flashcard-image quiz-feedback-image';
+      answerImg.src = a.image;
+      answerImg.alt = '';
+      fbBack.appendChild(answerImg);
+    }
+    fbBack.appendChild(document.createTextNode(a.back));
 
     if (a.result === 'correct') {
       fbYours.classList.add('hidden');

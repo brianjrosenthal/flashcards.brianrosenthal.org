@@ -41,13 +41,18 @@ $count = (int)($_GET['count'] ?? 20);
 if (!in_array($count, [0, 10, 20, 40], true)) {
     $count = 20;
 }
+$direction = (string)($_GET['direction'] ?? QuizManagement::DIRECTION_FRONT_TO_BACK);
+if (!QuizManagement::isValidDirection($direction)) {
+    $direction = QuizManagement::DIRECTION_FRONT_TO_BACK;
+}
+$backToFront = $direction === QuizManagement::DIRECTION_BACK_TO_FRONT;
 
-$questions = QuizManagement::buildQuizRound((int)$me['id'], $deck, $source, $count > 0 ? $count : null);
+$questions = QuizManagement::buildQuizRound((int)$me['id'], $deck, $source, $count > 0 ? $count : null, $direction);
 
 // Carries the round's settings back to the launcher (pre-ticked) and into
 // the "play again" links.
-$settingsQuery = $deck->queryString() . '&' . http_build_query(['source' => $source, 'count' => $count]);
-$roundSettings = ['deck_type' => $deck->type, 'deck_id' => $deck->id, 'source' => $source, 'count' => $count];
+$settingsQuery = $deck->queryString() . '&' . http_build_query(['source' => $source, 'count' => $count, 'direction' => $direction]);
+$roundSettings = ['deck_type' => $deck->type, 'deck_id' => $deck->id, 'source' => $source, 'count' => $count, 'direction' => $direction];
 
 $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
 
@@ -61,6 +66,9 @@ header_html('Quiz: ' . $deck->label());
     <span class="quiz-deck-chip"><?=h($deck->label())?></span>
     <?php if ($source === QuizManagement::SOURCE_MISSES): ?>
       <span class="quiz-deck-chip quiz-source-chip">Cards I miss or flagged</span>
+    <?php endif; ?>
+    <?php if ($backToFront): ?>
+      <span class="quiz-deck-chip quiz-source-chip">Back &rarr; front</span>
     <?php endif; ?>
   </div>
   <a class="button small" href="/quiz/?<?=h($settingsQuery)?>">Change settings</a>
@@ -99,7 +107,7 @@ header_html('Quiz: ' . $deck->label());
       <div class="quiz-points-chip" id="quiz-points-chip"><span id="quiz-points">0</span> pts</div>
       <div class="quiz-streak hidden" id="quiz-streak"></div>
 
-      <p class="quiz-ask small">What's on the back?</p>
+      <p class="quiz-ask small"><?= $backToFront ? "What's on the front?" : "What's on the back?" ?></p>
       <div class="quiz-prompt" id="quiz-prompt"></div>
 
       <button type="button" class="button small quiz-hint-btn" id="quiz-hint-btn">Need a hint?</button>
@@ -150,7 +158,7 @@ header_html('Quiz: ' . $deck->label());
     const QUESTIONS = <?= json_encode($questions, $jsonFlags) ?>;
     // Every answer in the deck (texts only, nothing marking which is which),
     // for the "show answers starting with…" second hint.
-    const ANSWER_LIST = <?= json_encode(QuizManagement::listAnswerTexts($deck), $jsonFlags) ?>;
+    const ANSWER_LIST = <?= json_encode(QuizManagement::listAnswerTexts($deck, $direction), $jsonFlags) ?>;
     // Identifies this round's settings, so a saved in-progress round is only
     // resumed into the round it belongs to.
     const ROUND_SETTINGS = <?= json_encode($roundSettings, $jsonFlags) ?>;

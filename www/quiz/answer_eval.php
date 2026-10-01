@@ -22,8 +22,12 @@ require_csrf();
 try {
     $cardId = (int)($_POST['card_id'] ?? 0);
     $answer = (string)($_POST['answer'] ?? '');
+    $direction = (string)($_POST['direction'] ?? QuizManagement::DIRECTION_FRONT_TO_BACK);
+    if (!QuizManagement::isValidDirection($direction)) {
+        $direction = QuizManagement::DIRECTION_FRONT_TO_BACK;
+    }
 
-    $outcome = QuizManagement::recordAnswer(UserContext::getLoggedInUserContext(), $cardId, $answer);
+    $outcome = QuizManagement::recordAnswer(UserContext::getLoggedInUserContext(), $cardId, $answer, $direction);
     echo json_encode(['ok' => true] + $outcome, JSON_UNESCAPED_UNICODE);
 } catch (\Throwable $e) {
     echo json_encode(['ok' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);

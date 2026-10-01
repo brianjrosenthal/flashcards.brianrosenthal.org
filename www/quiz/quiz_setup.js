@@ -1,5 +1,5 @@
-// Quiz launcher: when the deck changes, refetch how many questions each card
-// pool holds (pool_counts_eval.php), grey out empty pools, and keep the Start
+// Quiz launcher: when the deck or direction changes, refetch how many
+// questions each card pool holds (pool_counts_eval.php), grey out empty pools, and keep the Start
 // button off while the chosen pool has nothing to ask. On submit, the
 // "category:N" / "subcategory:N" deck value is rewritten into the
 // ?subcategory=N / ?category=N every other page uses.
@@ -10,7 +10,7 @@
   if (!form) return;
 
   var deckSelect = document.getElementById('quiz-deck-select');
-  var sourcePicks = form.querySelectorAll('.quiz-source-pick');
+  var sourcePicks = form.querySelectorAll('.quiz-pool-pick');
   var startBtn = document.getElementById('quiz-start');
   var note = document.getElementById('quiz-setup-note');
   var latestRequest = 0;
@@ -57,7 +57,10 @@
     var requestId = ++latestRequest;
     showNote('Counting cards…');
 
-    fetch('/quiz/pool_counts_eval.php?' + encodeURIComponent(deck.type) + '=' + encodeURIComponent(deck.id),
+    var directionInput = form.querySelector('input[name="direction"]:checked');
+    var direction = directionInput ? directionInput.value : 'front';
+    fetch('/quiz/pool_counts_eval.php?' + encodeURIComponent(deck.type) + '=' + encodeURIComponent(deck.id)
+          + '&direction=' + encodeURIComponent(direction),
       { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
       .then(function (res) {
@@ -78,6 +81,9 @@
   }
 
   if (deckSelect) deckSelect.addEventListener('change', refreshCounts);
+  form.querySelectorAll('input[name="direction"]').forEach(function (input) {
+    input.addEventListener('change', refreshCounts);   // back-to-front skips image-only cards
+  });
   form.querySelectorAll('input[name="source"]').forEach(function (input) {
     input.addEventListener('change', refreshStart);
   });

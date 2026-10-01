@@ -31,6 +31,13 @@ final class QuizManagement {
     public const SOURCE_ALL = 'all';
     public const SOURCE_MISSES = 'misses';
 
+    // Which way round a round runs. FRONT_TO_BACK shows the front (image
+    // and/or text) and asks for the back; BACK_TO_FRONT shows the back text
+    // and asks for the front text, which suits decks whose backs are
+    // definitions. Cards with no front text cannot be asked that way round.
+    public const DIRECTION_FRONT_TO_BACK = 'front';
+    public const DIRECTION_BACK_TO_FRONT = 'back';
+
     public const POINTS_CORRECT = 10;
     public const POINTS_CLOSE = 8;
     public const POINTS_OVERRIDE = 5;            // "my answer was right anyway"
@@ -44,6 +51,16 @@ final class QuizManagement {
             ActivityLog::log($ctx, $action, $meta);
         } catch (\Throwable $e) {
             // Best-effort logging; never disrupt the main flow.
+        }
+    }
+
+    public static function isValidDirection(string $direction): bool {
+        return in_array($direction, [self::DIRECTION_FRONT_TO_BACK, self::DIRECTION_BACK_TO_FRONT], true);
+    }
+
+    private static function assertValidDirection(string $direction): void {
+        if (!self::isValidDirection($direction)) {
+            throw new InvalidArgumentException('Unknown quiz direction.');
         }
     }
 
@@ -73,21 +90,23 @@ final class QuizManagement {
      * first_letter]. The back is deliberately absent: the client posts what
      * was typed to recordAnswer() and the server decides.
      */
-    public static function buildQuizRound(int $viewerId, Deck $deck, string $source = self::SOURCE_ALL, ?int $limit = 20): array {
-        $cards = self::fetchCandidateCards($viewerId, $deck, $source);
+    public static function buildQuizRound(int $viewerId, Deck $deck, string $source = self::SOURCE_ALL, ?int $limit = 20, string $direction = self::DIRECTION_FRONT_TO_BACK): array {
+        self::assertValidDirection($direction);
+        $cards = self::fetchCandidateCards($viewerId, $deck, $source, $direction);
         if ($limit !== null && $limit > 0 && count($cards) > $limit) {
             $cards = array_slice($cards, 0, $limit);
         }
-        $questions = array_map([self::class, 'buildQuestionForCard'], $cards);
+        $questions = array_map(static fn(array $card): array => self::buildQuestionForCard($card, $direction), $cards);
         shuffle($questions);
         return $questions;
     }
 
-    /** How many questions this deck and pool can produce for the viewer. */
-    public static function countAvailableQuestions(int $viewerId, Deck $deck, string $source): int {
+    /** How many questions this deck, pool and direction can produce for the viewer. */
+    public static function countAvailableQuestions(int $viewerId, Deck $deck, string $source, string $direction = self::DIRECTION_FRONT_TO_BACK): int {
         self::assertValidSource($source);
+        self::assertValidDirection($direction);
         $params = [$viewerId, $viewerId];
-        $sql = 'SELECT COUNT(*) ' . self::candidateFromSql($deck, $source, $params);
+        $sql = 'SELECT COUNT(*) ' . self::candidateFromSql($deck, $source, $params, $direction);
         $st = self::pdo()->prepare($sql);
         $st->execute($params);
         return (int)$st->fetchColumn();
@@ -98,13 +117,15 @@ final class QuizManagement {
      * normalized — for the "answers starting with that letter" chips. Nothing
      * marks which one belongs to the question being asked.
      */
-    public static function listAnswerTexts(Deck $deck): array {
+    public static function listAnswerTexts(Deck $deck, string $direction = self::DIRECTION_FRONT_TO_BACK): array {
+        self::assertValidDirection($direction);
         [$where, $params] = $deck->scopeSql('k');
-        $st = self::pdo()->prepare('SELECT k.back_text FROM cards k WHERE ' . $where);
+        $column = $direction === self::DIRECTION_BACK_TO_FRONT ? 'front_text' : 'back_text';
+        $st = self::pdo()->prepare('SELECT k.' . $column . ' AS answer FROM cards k WHERE ' . $where);
         $st->execute($params);
         $out = [];
         foreach ($st->fetchAll() as $row) {
-            $accepted = self::acceptedAnswers((string)$row['back_text']);
+            $accepted = self::acceptedAnswers((string)$row['answer']);
             if ($accepted) {
                 $out[$accepted[0]] = true;
             }
@@ -119,10 +140,10 @@ final class QuizManagement {
      * verdict needs. The quiz_attempts summary joined here does double duty:
      * it supplies the ordering and the "cards I miss" test.
      */
-    private static function fetchCandidateCards(int $viewerId, Deck $deck, string $source): array {
+    private static function fetchCandidateCards(int $viewerId, Deck $deck, string $source, string $direction): array {
         self::assertValidSource($source);
         $params = [$viewerId, $viewerId];
-        $sql = 'SELECT k.* ' . self::candidateFromSql($deck, $source, $params)
+        $sql = 'SELECT k.* ' . self::candidateFromSql($deck, $source, $params, $direction)
              . ' ORDER BY (qa.last_quizzed IS NULL) DESC, qa.last_quizzed ASC, RAND()';
         $st = self::pdo()->prepare($sql);
         $st->execute($params);
@@ -134,7 +155,7 @@ final class QuizManagement {
      * $params must already hold the viewer id twice (state join, quiz join);
      * the deck's parameters are appended.
      */
-    private static function candidateFromSql(Deck $deck, string $source, array &$params): string {
+    private static function candidateFromSql(Deck $deck, string $source, array &$params, string $direction = self::DIRECTION_FRONT_TO_BACK): string {
         [$scopeWhere, $scopeParams] = $deck->scopeSql('k');
         foreach ($scopeParams as $p) {
             $params[] = $p;
@@ -151,6 +172,9 @@ final class QuizManagement {
                     GROUP BY card_id
                 ) qa ON qa.card_id = k.id
                 WHERE " . $scopeWhere;
+        if ($direction === self::DIRECTION_BACK_TO_FRONT) {
+            $sql .= " AND k.front_text <> ''";   // an image-only front cannot be typed
+        }
         if ($source === self::SOURCE_MISSES) {
             $sql .= " AND (s.is_flagged = 1
                            OR s.last_mark = 'needs_review'
@@ -160,14 +184,24 @@ final class QuizManagement {
         return $sql;
     }
 
-    /** One question from a cards row: the front, plus the hint numbers about the back. */
-    private static function buildQuestionForCard(array $card): array {
-        $accepted = self::acceptedAnswers((string)$card['back_text']);
+    /** The side of a card that is asked for, in a given direction. */
+    private static function answerSideText(array $card, string $direction): string {
+        return (string)($direction === self::DIRECTION_BACK_TO_FRONT ? $card['front_text'] : $card['back_text']);
+    }
+
+    /**
+     * One question from a cards row: the prompt side (front image and/or
+     * text, or the back text when running back-to-front) plus the hint
+     * numbers about the answer side. Never the answer itself.
+     */
+    private static function buildQuestionForCard(array $card, string $direction): array {
+        $accepted = self::acceptedAnswers(self::answerSideText($card, $direction));
         $primary = $accepted[0] ?? '';
+        $backToFront = $direction === self::DIRECTION_BACK_TO_FRONT;
         return [
             'card_id' => (int)$card['id'],
-            'front_text' => (string)$card['front_text'],
-            'image_url' => ImageStorage::displayUrlForCard($card),
+            'prompt_text' => (string)($backToFront ? $card['back_text'] : $card['front_text']),
+            'prompt_image_url' => $backToFront ? null : ImageStorage::displayUrlForCard($card),
             'words' => $primary === '' ? 0 : count(explode(' ', $primary)),
             'letters' => (int)preg_match_all('/[\p{L}\p{N}]/u', $primary),
             'first_letter' => mb_strtoupper(mb_substr($primary, 0, 1)),
@@ -394,7 +428,8 @@ final class QuizManagement {
      * verdict, the points, the card's front and back, the attempt id (so the
      * answer can be claimed as right anyway), and the user's refreshed totals.
      */
-    public static function recordAnswer(UserContext $ctx, int $cardId, string $typed): array {
+    public static function recordAnswer(UserContext $ctx, int $cardId, string $typed, string $direction = self::DIRECTION_FRONT_TO_BACK): array {
+        self::assertValidDirection($direction);
         $deck = Deck::ofCard($cardId);
         if (!$deck) {
             throw new InvalidArgumentException('That card no longer exists.');
@@ -410,13 +445,17 @@ final class QuizManagement {
             $typed = mb_substr($typed, 0, 255);
         }
 
-        $result = self::judgeAnswer($typed, (string)$card['back_text']);
+        $expected = self::answerSideText($card, $direction);
+        if ($expected === '') {
+            throw new InvalidArgumentException('That card has no front text, so it cannot be asked back-to-front.');
+        }
+        $result = self::judgeAnswer($typed, $expected);
         $points = self::pointsForResult($result);
 
         $st = self::pdo()->prepare(
-            'INSERT INTO quiz_attempts (user_id, card_id, answer_text, result, points_awarded) VALUES (?, ?, ?, ?, ?)'
+            'INSERT INTO quiz_attempts (user_id, card_id, direction, answer_text, result, points_awarded) VALUES (?, ?, ?, ?, ?, ?)'
         );
-        $st->execute([$ctx->id, $cardId, $typed, $result, $points]);
+        $st->execute([$ctx->id, $cardId, $direction, $typed, $result, $points]);
         $attemptId = (int)self::pdo()->lastInsertId();
 
         self::log($ctx, 'quiz.answered', [
@@ -424,6 +463,7 @@ final class QuizManagement {
             'card_id' => $cardId,
             'deck_type' => $deck->type,
             'deck_id' => $deck->id,
+            'direction' => $direction,
             'result' => $result,
             'points' => $points,
         ]);
@@ -433,6 +473,7 @@ final class QuizManagement {
             'result' => $result,
             'points' => $points,
             'can_claim_correct' => $result === self::RESULT_INCORRECT,
+            'direction' => $direction,
             'front_text' => (string)$card['front_text'],
             'image_url' => ImageStorage::displayUrlForCard($card),
             'back_text' => (string)$card['back_text'],

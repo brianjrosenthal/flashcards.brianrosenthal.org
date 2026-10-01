@@ -151,9 +151,9 @@ final class QuizManagementTest extends TestCase
 
         foreach ($round as $q) {
             $this->assertArrayNotHasKey('back_text', $q);
-            $this->assertSame(['card_id', 'front_text', 'image_url', 'words', 'letters', 'first_letter'], array_keys($q));
-            $this->assertStringStartsWith('Front ', $q['front_text']);
-            $this->assertNull($q['image_url']);
+            $this->assertSame(['card_id', 'prompt_text', 'prompt_image_url', 'words', 'letters', 'first_letter'], array_keys($q));
+            $this->assertStringStartsWith('Front ', $q['prompt_text']);
+            $this->assertNull($q['prompt_image_url']);
             $this->assertSame(2, $q['words']);       // "back N"
             $this->assertSame(5, $q['letters']);     // b a c k + the digit
             $this->assertSame('B', $q['first_letter']);
@@ -464,5 +464,43 @@ final class QuizManagementTest extends TestCase
         // Non-list backs are unchanged: "Trinidad and Tobago" is still one answer.
         $this->assertSame('correct', QuizManagement::judgeAnswer('Trinidad and Tobago', 'Trinidad and Tobago'));
         $this->assertSame('incorrect', QuizManagement::judgeAnswer('Paris, Rome', 'Paris'));
+    }
+
+    public function testBackToFrontAsksTheBackAndJudgesTheFront(): void
+    {
+        [$a] = $this->tree['card_ids'];
+        $imageOnly = CardManagement::create($this->charlie, $this->tree['subcategory_id'], ['front_text' => '', 'back_text' => 'Only a picture'], [
+            'body' => 'x', 'thumb_body' => 'y', 'content_type' => 'image/png', 'ext' => 'png', 'width' => 10, 'height' => 10, 'size' => 1,
+        ]);
+
+        $back = QuizManagement::DIRECTION_BACK_TO_FRONT;
+        $this->assertSame(4, QuizManagement::countAvailableQuestions($this->charlie->id, $this->deck, QuizManagement::SOURCE_ALL));
+        $this->assertSame(3, QuizManagement::countAvailableQuestions($this->charlie->id, $this->deck, QuizManagement::SOURCE_ALL, $back), 'image-only fronts cannot be typed');
+
+        $round = QuizManagement::buildQuizRound($this->charlie->id, $this->deck, QuizManagement::SOURCE_ALL, null, $back);
+        $this->assertCount(3, $round);
+        foreach ($round as $q) {
+            $this->assertStringStartsWith('Back ', $q['prompt_text'], 'the back is the prompt');
+            $this->assertNull($q['prompt_image_url'], 'the front image is the answer side, never shown with the prompt');
+            $this->assertArrayNotHasKey('front_text', $q);
+            $this->assertSame('F', $q['first_letter'], 'hints describe the front');
+        }
+        $this->assertNotContains($imageOnly, array_column($round, 'card_id'));
+        $this->assertSame(['front 1', 'front 2', 'front 3'], QuizManagement::listAnswerTexts($this->deck, $back));
+
+        $res = QuizManagement::recordAnswer($this->charlie, $a, 'front 1', $back);
+        $this->assertSame('correct', $res['result']);
+        $this->assertSame('back', $res['direction']);
+        $this->assertSame('Front 1', $res['front_text']);
+        $this->assertSame('Back 1', $res['back_text']);
+        $st = pdo()->prepare('SELECT direction FROM quiz_attempts WHERE id = ?');
+        $st->execute([$res['attempt_id']]);
+        $this->assertSame('back', $st->fetchColumn());
+
+        $this->assertSame('incorrect', QuizManagement::recordAnswer($this->charlie, $a, 'Back 1', $back)['result'], 'the back is not the answer that way round');
+        $this->assertSame('correct', QuizManagement::recordAnswer($this->charlie, $a, 'Back 1')['result'], 'front-to-back is unchanged');
+
+        $this->expectException(InvalidArgumentException::class);
+        QuizManagement::recordAnswer($this->charlie, $imageOnly, 'anything', $back);
     }
 }

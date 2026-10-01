@@ -125,9 +125,12 @@ other people's public decks they have progress on), then the engine at
   "N today"; *mastered* = the card's latest mark is Got it. It links to Stats.
 
 **Quiz** (`/quiz/`): recall practice — see the front, type the back.
-- Launcher: pick the deck, the pool (**All cards** or **Cards I miss or
-  flagged** = flagged, or latest flashcard mark is Need More Review, or missed
-  in a quiz and not gotten right since) and a round length (10 / 20 / 40 / all). Counts sit
+- Launcher: pick the deck, the direction (**See the front, type the back**,
+  or **See the back, type the front** for decks whose backs are definitions;
+  back-to-front skips cards whose front is only a picture, and shows the
+  front's picture with the answer afterwards), the pool (**All cards** or
+  **Cards I miss or flagged** = flagged, or latest flashcard mark is Need
+  More Review, or missed in a quiz and not gotten right since) and a round length (10 / 20 / 40 / all). Counts sit
   beside each pool and follow the chosen deck; Start is disabled on an empty
   pool.
 - Rounds deal least-recently-quizzed cards first (never-quizzed lead), then
@@ -267,12 +270,13 @@ user × card touched: is_flagged, last_mark, per-mark counters,
 last_reviewed_at), `card_review_events` (append-only log of every mark),
 `user_deck_positions` (resume point and shuffle seed per deck; `deck_type` +
 `deck_id` is polymorphic, so those rows are removed in code when a deck is
-deleted), `quiz_attempts` (append-only: answer as typed, the server's verdict,
-whether it was claimed, points).
+deleted), `quiz_attempts` (append-only: which direction it was asked, answer as typed,
+the server's verdict, whether it was claimed, points).
 
 Seeded admin for fresh installs: `brian.rosenthal@gmail.com` / `flashcards`
-(change it). Migrations live in `www/db_migrations/` (`001_initial_schema.sql`
-today); `schema.sql` must always be updated alongside any migration.
+(change it). Migrations live in `www/db_migrations/` (`001_initial_schema.sql`,
+`002_quiz_direction.sql`); `schema.sql` must always be updated alongside any
+migration.
 
 ## Code layout (web root = `www/`)
 
