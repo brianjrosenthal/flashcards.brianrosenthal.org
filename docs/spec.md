@@ -222,7 +222,12 @@ or in the database.
 - Admin → **Image Storage**: configuration check, bucket exists, object count
   and size, reconciliation of recorded keys against the bucket (missing /
   orphans), *Create bucket*, *Test upload* (full put / head / GET / delete
-  cycle with the raw response), *Delete orphans*.
+  cycle with the raw response), *Delete orphans*, and a link to the **Image
+  size test** (`admin/image_size_test.php`): every limit a card image must
+  pass (`upload_max_filesize`, `post_max_size`, `IMAGE_MAX_BYTES`, memory,
+  time), which PHP version and ini files are live, whether the expected
+  `phprc` exists, and a dry-run upload that reports exactly where a given
+  photo stops.
 - Because image bytes pass through PHP, production needs `upload_max_filesize`
   / `post_max_size` above `IMAGE_MAX_BYTES` and `memory_limit` around 256M (see
   `docs/deployment.md`).
