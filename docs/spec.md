@@ -96,8 +96,9 @@ to manage anyone's decks. A user without a page can create one here.
 - **Page settings**: title, tagline, colour scheme (swatch picker), *Page is
   public*. URL name and custom domain are admin-only fields.
 
-**Study** (`/review/`): a deck picker over the viewer's own decks (and any
-other people's public decks they have progress on), then the engine at
+**Study** (`/review/`): a deck picker over the viewer's own decks and every
+other person's public decks (plus any deck they have progress on, even if it
+has since gone private); the Quiz launcher uses the same list. Then the engine at
 `/review/study.php?subcategory=N` or `?category=N`:
 - One large card at a time. Click / tap / space flips it with a 160 ms
   cross-fade. Front = the image and/or text; back = the answer, plus the deck

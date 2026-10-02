@@ -320,16 +320,17 @@ final class CardProgressTest extends TestCase
         $lillyTree = test_seed_tree($lilly, 'lilly', 2);
         CardProgress::markCard($lilly, $lillyTree['card_ids'][0], CardProgress::MARK_GOT_IT);
 
-        // Only her own deck so far.
+        // Her own deck first, then Charlie's public one (never studied yet).
         $decks = CardProgress::listDecksForUser($lilly->id);
-        $this->assertCount(1, $decks);
+        $this->assertCount(2, $decks);
         $this->assertTrue($decks[0]['is_mine']);
         $this->assertSame('Lilly', $decks[0]['owner_first_name']);
         $this->assertSame(2, $decks[0]['category']['card_count']);
         $this->assertSame(1, $decks[0]['category']['learned']);
         $this->assertSame(1, $decks[0]['subcategories'][0]['learned']);
+        $this->assertFalse($decks[1]['is_mine']);
 
-        // Studying one of Charlie's cards adds his category, labelled with his name.
+        // Studying one of Charlie's cards keeps his category listed, labelled with his name.
         CardProgress::markCard($lilly, $this->tree['card_ids'][0], CardProgress::MARK_NEEDS_REVIEW);
         $decks = CardProgress::listDecksForUser($lilly->id);
         $this->assertCount(2, $decks);
@@ -341,8 +342,12 @@ final class CardProgressTest extends TestCase
         $this->assertSame(0, $decks[1]['category']['learned']);
         $this->assertSame('Presidents', $decks[1]['subcategories'][0]['name']);
 
-        // Charlie is unaffected by Lilly's studying.
-        $this->assertCount(1, CardProgress::listDecksForUser($this->charlie->id));
+        // Charlie sees his own deck and Lilly's public one; her studying
+        // changes nothing of his.
+        $charlies = CardProgress::listDecksForUser($this->charlie->id);
+        $this->assertCount(2, $charlies);
+        $this->assertTrue($charlies[0]['is_mine']);
+        $this->assertSame(0, $charlies[0]['category']['learned']);
     }
 
     public function testForgetDeckDropsEveryViewersPosition(): void
@@ -439,8 +444,11 @@ final class CardProgressTest extends TestCase
         SiteManagement::updateSiteContent($lilly, $lillyTree['site_id'], ['is_public' => false]);
         $this->assertSame(['Charlie:US History'], $names(CardProgress::listDecksForUser($dad->id)));
 
-        // ... unless the viewer already has progress on one of them.
+        // ... unless the viewer already has progress on one of them (studied
+        // while it was public).
+        SiteManagement::updateSiteContent($lilly, $lillyTree['site_id'], ['is_public' => true]);
         CardProgress::markCard($dad, $lillyTree['card_ids'][0], CardProgress::MARK_GOT_IT);
+        SiteManagement::updateSiteContent($lilly, $lillyTree['site_id'], ['is_public' => false]);
         $this->assertSame(['Charlie:US History', 'Lilly:US History'], $names(CardProgress::listDecksForUser($dad->id)));
     }
 }
